@@ -27,27 +27,27 @@ configs-plain/files.tar: data/step configs-cipher/files.tar.jwe
 
 data/.step/config/defaults.json: data/step-${STEP_VERSION}.tgz configs-plain/files.tar
 	data/step ca bootstrap --force \
-		--ca-url $(file < configs-plain/ca-url) \
-		--fingerprint  $(file < configs-plain/ca-fingerprint)
+		--ca-url $(shell cat configs-plain/ca-url) \
+		--fingerprint  $(shell cat configs-plain/ca-fingerprint)
 
 data/user_email:
 	systemd-ask-password --echo "Inserisci la tua email Confinet:" > data/user_email
 
 data/TOKEN: data/.step/config/defaults.json configs-plain/files.tar data/user_email
-	step oauth \
+	data/step oauth \
 		--oidc \
 		--bare \
-		--client-id $(file < configs-plain/client-id) \
-		--client-secret $(file < configs-plain/client-secret) \
-		--email $(file < data/user_email) \
+		--client-id $(shell cat configs-plain/client-id) \
+		--client-secret $(shell cat configs-plain/client-secret) \
+		--email $(shell cat data/user_email) \
 		> data/TOKEN
 
 data/.step/user.crt: data/user_email data/TOKEN
 	data/step ca certificate --force \
-		--token $(file < data/TOKEN) \
+		--token $(shell cat data/TOKEN) \
 		--kty RSA \
 		--size 2048 \
-		$(file < data/user_email) \
+		$(shell cat data/user_email) \
 		data/.step/user.crt \
 		data/.step/user.key
 	rm -f data/TOKEN
