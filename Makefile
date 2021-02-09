@@ -1,3 +1,5 @@
+.DELETE_ON_ERROR:
+
 STEP_VERSION=0.15.3
 
 export STEPPATH=${PWD}/data/.step
@@ -5,7 +7,7 @@ export STEPPATH=${PWD}/data/.step
 .PHONY: help
 help:
 	@echo "Comandi disponibili:"
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}'
 
 data/step-${STEP_VERSION}.tgz:
 	rm -frv data/step*
@@ -13,21 +15,30 @@ data/step-${STEP_VERSION}.tgz:
 	tar -C data -xf data/step-${STEP_VERSION}.tgz
 	ln -s step_${STEP_VERSION}/bin/step data/step
 
-data/.step/config/defaults.json: data/step-${STEP_VERSION}.tgz
+data/step: data/step-${STEP_VERSION}.tgz
+
+configs-plain/files.tar: data/step configs-cipher/files.tar.jwe
+	data/step crypto jwe decrypt \
+		< configs-cipher/files.tar.jwe \
+		> configs-plain/files.tar
+	tar xv \
+		--directory configs-plain/ \
+		--file configs-plain/files.tar
+
+data/.step/config/defaults.json: data/step-${STEP_VERSION}.tgz configs-plain/files.tar
 	data/step ca bootstrap --force \
-		--ca-url $(file < configs/ca-url) \
-		--fingerprint  $(file < configs/ca-fingerprint)
+		--ca-url $(file < configs-plain/ca-url) \
+		--fingerprint  $(file < configs-plain/ca-fingerprint)
 
 data/user_email:
 	systemd-ask-password --echo "Inserisci la tua email Confinet:" > data/user_email
 
-data/TOKEN: data/.step/config/defaults.json
-	rm -f data/TOKEN
+data/TOKEN: data/.step/config/defaults.json configs-plain/files.tar data/user_email
 	step oauth \
 		--oidc \
 		--bare \
-		--client-id $(file < configs/client-id) \
-		--client-secret $(file < configs/client-secret) \
+		--client-id $(file < configs-plain/client-id) \
+		--client-secret $(file < configs-plain/client-secret) \
 		--email $(file < data/user_email) \
 		> data/TOKEN
 
@@ -41,8 +52,8 @@ data/.step/user.crt: data/user_email data/TOKEN
 		data/.step/user.key
 	rm -f data/TOKEN
 
-data/pfext01-step.ovpn: data/.step/user.crt
-	cp -a configs/pfext01-step.ovpn data/pfext01-step.ovpn.tmp
+data/pfext01-step.ovpn: data/.step/config/defaults.json data/.step/user.crt configs-plain/files.tar
+	cp -a configs-plain/pfext01-step.ovpn data/pfext01-step.ovpn.tmp
 	echo "<ca>"                         >> data/pfext01-step.ovpn.tmp
 	cat data/.step/certs/root_ca.crt    >> data/pfext01-step.ovpn.tmp
 	echo "</ca>"                        >> data/pfext01-step.ovpn.tmp
@@ -64,8 +75,18 @@ import-pfext01-step-openvpn: data/pfext01-step.ovpn ## Importa configurazione VP
 	-echo -e "set ipv4.never-default yes\nsave\nquit" \
 		| nmcli connection edit pfext01-step
 
-ok: data/pfext01-step.ovpn
-	data/step
+.PHONY: encrypt-configs
+encrypt-configs: data/step ## Cifra le configurazioni modificate
+	tar cvp \
+		--directory configs-plain/ \
+		--file configs-plain/files.tar \
+		--exclude ./files.tar \
+		--exclude ./.gitignore \
+		./
+	data/step crypto jwe encrypt --alg PBES2-HS512+A256KW \
+		< configs-plain/files.tar \
+		> configs-cipher/files.tar.jwe
+	rm configs-plain/files.tar
 
 .PHONY: clean
 clean:
