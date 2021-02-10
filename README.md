@@ -5,7 +5,7 @@ certificato giornaliero per accedere alle risorse aziendali.
 
 ### Installazione
 
-Con GIT:
+Con GIT (preferibile per facilitare gli aggiornamenti):
 
 ```
 git clone https://github.com/confinet/step-sso.git confinet-step-sso \
@@ -27,6 +27,6 @@ wget -O confinet-step-sso.zip "https://github.com/confinet/step-sso/archive/mast
 $ make
 Comandi disponibili:
 create-pfext01-step-openvpn    Crea configurazione VPN in data/pfext01-step.ovpn
-import-pfext01-step-openvpn    Importa configurazione VPN nel NetworkManager tramite `nmcli`
+import-pfext01-step-openvpn    Crea ed Importa configurazione VPN nel NetworkManager tramite `nmcli`
 encrypt-configs                Cifra le configurazioni modificate
 ```

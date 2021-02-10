@@ -69,7 +69,7 @@ data/pfext01-step.ovpn: data/.step/config/defaults.json data/.step/user.crt conf
 create-pfext01-step-openvpn: data/pfext01-step.ovpn ## Crea configurazione VPN in data/pfext01-step.ovpn
 
 .PHONY: import-pfext01-step-openvpn
-import-pfext01-step-openvpn: data/pfext01-step.ovpn ## Importa configurazione VPN nel NetworkManager tramite `nmcli`
+import-pfext01-step-openvpn: data/pfext01-step.ovpn ## Crea ed Importa configurazione VPN nel NetworkManager tramite `nmcli`
 	-nmcli connection delete pfext01-step
 	nmcli connection import type openvpn file data/pfext01-step.ovpn
 	-echo -e "set ipv4.never-default yes\nsave\nquit" \
