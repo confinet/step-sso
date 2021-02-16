@@ -1,9 +1,10 @@
 .DELETE_ON_ERROR:
 
 BUILD_DIR := .
+STEP_VERSION := 0.15.3
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
-STEP_VERSION := 0.15.3
+VPN_NAME := confinet-pfext01-step
 
 export STEPPATH=$(BUILD_DIR)/data/.step
 
@@ -53,9 +54,19 @@ data/.step/user.crt: data/user_email data/TOKEN
 		$(shell cat $(BUILD_DIR)/data/user_email) \
 		$(BUILD_DIR)/$@ \
 		$(BUILD_DIR)/$(patsubst %.crt,%.key,$@)
-	rm -f $(BUILD_DIR)/data/TOKEN
+	$(BUILD_DIR)/data/step certificate inspect --short $(BUILD_DIR)/$@ \
+		| tail -n1 \
+		| sed 's/\s\+to:\s\+//' \
+		| xargs date +%s -d \
+		> $(BUILD_DIR)/$@.expiresAt
 
-data/pfext01-step.ovpn: data/.step/config/defaults.json data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
+.PHONY: check-crt-expiration
+check-crt-expiration: data/.step/user.crt
+	if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/data/.step/user.crt.expiresAt) ]; then \
+		rm $(BUILD_DIR)/data/.step/user.crt; \
+	fi;
+
+data/$(VPN_NAME).ovpn: data/.step/config/defaults.json check-crt-expiration data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
 	cp -a $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/pfext01-step.ovpn  $(BUILD_DIR)/$@.tmp
 	echo "<ca>"                                      >> $(BUILD_DIR)/$@.tmp
 	cat $(BUILD_DIR)/data/.step/certs/root_ca.crt    >> $(BUILD_DIR)/$@.tmp
@@ -69,14 +80,14 @@ data/pfext01-step.ovpn: data/.step/config/defaults.json data/.step/user.crt $(CO
 	mv $(BUILD_DIR)/$@.tmp $(BUILD_DIR)/$@
 
 .PHONY: create-pfext01-step-openvpn
-create-pfext01-step-openvpn: data/pfext01-step.ovpn ## Crea configurazione VPN in data/pfext01-step.ovpn
+create-pfext01-step-openvpn: data/$(VPN_NAME).ovpn ## Crea configurazione VPN in ./data/
 
 .PHONY: import-pfext01-step-openvpn
-import-pfext01-step-openvpn: data/pfext01-step.ovpn ## Crea ed Importa configurazione VPN nel NetworkManager tramite `nmcli`
-	-nmcli connection delete pfext01-step
-	nmcli connection import type openvpn file $(BUILD_DIR)/data/pfext01-step.ovpn
-	-echo -e "set ipv4.never-default yes\nsave\nquit" \
-		| nmcli connection edit pfext01-step
+import-pfext01-step-openvpn: data/$(VPN_NAME).ovpn ## Crea ed Importa configurazione VPN nel NetworkManager tramite `nmcli`
+	-nmcli connection delete $(VPN_NAME)
+	nmcli connection import type openvpn file $(BUILD_DIR)/data/$(VPN_NAME).ovpn
+	-echo "set ipv4.never-default yes\nsave\nquit" \
+		| nmcli connection edit $(VPN_NAME)
 
 .PHONY: encrypt-configs
 encrypt-configs: data/step-$(STEP_VERSION).tgz ## Cifra le configurazioni modificate
