@@ -68,7 +68,7 @@ data/pfext01-step.ovpn: data/.step/config/defaults.json data/.step/user.crt $(CO
 	echo "</key>"                                    >> $(BUILD_DIR)/$@.tmp
 	mv $(BUILD_DIR)/$@.tmp $(BUILD_DIR)/$@
 
-.PHONY: import-pfext01-step-openvpn
+.PHONY: create-pfext01-step-openvpn
 create-pfext01-step-openvpn: data/pfext01-step.ovpn ## Crea configurazione VPN in data/pfext01-step.ovpn
 
 .PHONY: import-pfext01-step-openvpn
