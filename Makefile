@@ -1,7 +1,7 @@
 .DELETE_ON_ERROR:
 
 BUILD_DIR := .
-STEP_VERSION := 0.15.3
+STEP_VERSION := 0.15.4custom
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
 VPN_NAME := confinet-pfext01-step
@@ -15,7 +15,9 @@ help:
 
 data/step-$(STEP_VERSION).tgz:
 	rm -frv $(BUILD_DIR)/data/step*
-	wget -O $(BUILD_DIR)/$@ https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)/step_linux_$(STEP_VERSION)_amd64.tar.gz
+	# Waiting for https://github.com/smallstep/cli/pull/413
+	#wget -O $(BUILD_DIR)/$@ https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)/step_linux_$(STEP_VERSION)_amd64.tar.gz
+	wget -O $(BUILD_DIR)/$@ https://confinet.it/wp-content/uploads/2021/02/step_0.15.4custom.tar.gz
 	tar -C $(BUILD_DIR)/data -xf $(BUILD_DIR)/$@
 	ln -s step_$(STEP_VERSION)/bin/step $(BUILD_DIR)/data/step
 
@@ -44,6 +46,7 @@ data/TOKEN: data/.step/config/defaults.json $(CONFIGS_PLAIN_DIR)/files.tar data/
 		--client-id $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-id) \
 		--client-secret $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-secret) \
 		--email $(shell cat $(BUILD_DIR)/data/user_email) \
+		--prompt=select_account \
 		> $(BUILD_DIR)/$@
 
 data/.step/user.crt: data/user_email data/TOKEN
