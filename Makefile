@@ -61,9 +61,9 @@ data/.step/user.crt: data/user_email data/TOKEN
 		> $(BUILD_DIR)/$@.expiresAt
 
 .PHONY: check-crt-expiration
-check-crt-expiration: data/.step/user.crt
-	if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/data/.step/user.crt.expiresAt) ]; then \
-		rm $(BUILD_DIR)/data/.step/user.crt; \
+check-crt-expiration:
+	if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/data/.step/user.crt.expiresAt || echo 0) ]; then \
+		rm -f $(BUILD_DIR)/data/.step/user.crt $(BUILD_DIR)/data/TOKEN; \
 	fi;
 
 data/$(VPN_NAME).ovpn: data/.step/config/defaults.json check-crt-expiration data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
