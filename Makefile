@@ -6,6 +6,12 @@ CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
 VPN_NAME := confinet-pfext01-step
 
+# xdg-open for "step oauth" command has a bug in Ubuntu 16.04
+# which sends to the browser a wrong URL
+XDGOPEN_MIN := 1.1.2
+XDGOPEN_CUR := $(shell xdg-open --version | cut -d' ' -f2)
+XDGOPEN_FLAG := $(shell if [  "$(XDGOPEN_CUR)" = "$(shell printf '%s\n%s' "$(XDGOPEN_CUR)" "$(XDGOPEN_MIN)" | sort -V | head -n1)" ]; then echo --console; fi;)
+
 export STEPPATH=$(BUILD_DIR)/data/.step
 
 .PHONY: help
@@ -46,7 +52,7 @@ data/TOKEN: data/.step/config/defaults.json $(CONFIGS_PLAIN_DIR)/files.tar data/
 		--client-id $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-id) \
 		--client-secret $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-secret) \
 		--email $(shell cat $(BUILD_DIR)/data/user_email) \
-		--prompt=select_account \
+		--prompt=select_account $(XDGOPEN_FLAG) \
 		> $(BUILD_DIR)/$@
 
 data/.step/user.crt: data/user_email data/TOKEN
