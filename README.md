@@ -16,9 +16,9 @@ Senza GIT:
 
 ```
 $ wget -O confinet-step-sso.zip "https://github.com/confinet/step-sso/archive/master.zip" \
-  && unzip -o confinet-step-sso.zip \
-  && mv step-sso-master confinet-step-sso \
-  && cd confinet-step-sso
+    && unzip -o confinet-step-sso.zip \
+    && mv step-sso-master confinet-step-sso \
+    && cd confinet-step-sso
 ```
 
 ### Comandi disponibili
