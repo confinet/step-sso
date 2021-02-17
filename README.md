@@ -33,6 +33,10 @@ Invece per creare ed importare automaticamente la VPN nel NetworkManager tramite
 
 ```
 $ make import-pfext01-step-openvpn
-$ # Per avviare la VPN da riga di comando (comunque accessibile anche dalla GUI del NetworkManager):
+```
+
+Per avviare la VPN da riga di comando (comunque accessibile anche dalla GUI del NetworkManager):
+
+```
 $ nmcli con up confinet-pfext01-step
 ```
