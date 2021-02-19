@@ -12,6 +12,8 @@ XDGOPEN_MIN := 1.1.2
 XDGOPEN_CUR := $(shell xdg-open --version | cut -d' ' -f2)
 XDGOPEN_FLAG := $(shell if [  "$(XDGOPEN_CUR)" = "$(shell printf '%s\n%s' "$(XDGOPEN_CUR)" "$(XDGOPEN_MIN)" | sort -V | head -n1)" ]; then echo --console; fi;)
 
+NETWORKMANAGER_PACKAGE := network-manager-openvpn-gnome
+
 export STEPPATH=$(BUILD_DIR)/data/.step
 
 .PHONY: help
@@ -91,8 +93,13 @@ data/$(VPN_NAME).ovpn: data/.step/config/defaults.json check-crt-expiration data
 .PHONY: create-pfext01-step-openvpn
 create-pfext01-step-openvpn: data/$(VPN_NAME).ovpn ## Crea configurazione VPN in ./data/
 
+.PHONY: check-networkmanager
+check-networkmanager:
+	@dpkg -l | grep $(NETWORKMANAGER_PACKAGE)d || \
+		echo "È richiesta l'installazione del pacchetto $(NETWORKMANAGER_PACKAGE), esegui:\n$$ sudo apt install $(NETWORKMANAGER_PACKAGE)"
+
 .PHONY: import-pfext01-step-openvpn
-import-pfext01-step-openvpn: data/$(VPN_NAME).ovpn ## Crea ed Importa configurazione VPN nel NetworkManager tramite `nmcli`
+import-pfext01-step-openvpn: data/$(VPN_NAME).ovpn check-networkmanager ## Crea ed Importa configurazione VPN nel NetworkManager tramite `nmcli`
 	-nmcli connection delete $(VPN_NAME)
 	nmcli connection import type openvpn file $(BUILD_DIR)/data/$(VPN_NAME).ovpn
 	-echo "set ipv4.never-default yes\nsave\nquit" \
