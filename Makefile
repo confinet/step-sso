@@ -95,7 +95,7 @@ create-pfext01-step-openvpn: data/$(VPN_NAME).ovpn ## Crea configurazione VPN in
 
 .PHONY: check-networkmanager
 check-networkmanager:
-	@dpkg -l | grep $(NETWORKMANAGER_PACKAGE)d || \
+	@dpkg -l | grep $(NETWORKMANAGER_PACKAGE) || \
 		echo "È richiesta l'installazione del pacchetto $(NETWORKMANAGER_PACKAGE), esegui:\n$$ sudo apt install $(NETWORKMANAGER_PACKAGE)"
 
 .PHONY: import-pfext01-step-openvpn
