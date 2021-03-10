@@ -1,7 +1,7 @@
 .DELETE_ON_ERROR:
 
 BUILD_DIR := .
-STEP_VERSION := 0.15.4custom
+STEP_VERSION := 0.15.8
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
 VPN_NAME := confinet-pfext01-step
@@ -24,8 +24,7 @@ help:
 data/step-$(STEP_VERSION).tgz:
 	rm -frv $(BUILD_DIR)/data/step*
 	# Waiting for https://github.com/smallstep/cli/pull/413
-	#wget -O $(BUILD_DIR)/$@ https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)/step_linux_$(STEP_VERSION)_amd64.tar.gz
-	wget -O $(BUILD_DIR)/$@ https://confinet.it/wp-content/uploads/2021/02/step_0.15.4custom.tar.gz
+	wget -O $(BUILD_DIR)/$@ https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)/step_linux_$(STEP_VERSION)_amd64.tar.gz
 	tar -C $(BUILD_DIR)/data -xf $(BUILD_DIR)/$@
 	ln -s step_$(STEP_VERSION)/bin/step $(BUILD_DIR)/data/step
 
