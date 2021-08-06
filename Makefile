@@ -1,7 +1,7 @@
 .DELETE_ON_ERROR:
 
 BUILD_DIR := .
-STEP_VERSION := 0.15.8
+STEP_VERSION := 0.16.1
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
 VPN_NAME := confinet-pfext01-step
@@ -13,6 +13,7 @@ XDGOPEN_CUR := $(shell xdg-open --version | cut -d' ' -f2)
 XDGOPEN_FLAG := $(shell if [  "$(XDGOPEN_CUR)" = "$(shell printf '%s\n%s' "$(XDGOPEN_CUR)" "$(XDGOPEN_MIN)" | sort -V | head -n1)" ]; then echo --console; fi;)
 
 NETWORKMANAGER_PACKAGE := network-manager-openvpn-gnome
+NSS_PACKAGE := libnss3-tools
 
 export STEPPATH=$(BUILD_DIR)/data/.step
 
@@ -69,6 +70,7 @@ data/.step/user.crt: data/user_email data/TOKEN
 		| sed 's/\s\+to:\s\+//' \
 		| xargs date +%s -d \
 		> $(BUILD_DIR)/$@.expiresAt
+	openssl pkcs12 -nodes -passout pass: -inkey data/.step/user.key -in data/.step/user.crt -export -out data/.step/user.p12
 
 .PHONY: check-crt-expiration
 check-crt-expiration:
@@ -104,6 +106,18 @@ import-pfext01-step-openvpn: data/$(VPN_NAME).ovpn check-networkmanager ## Crea 
 	-echo "set ipv4.never-default yes\nsave\nquit" \
 		| nmcli connection edit $(VPN_NAME)
 
+.PHONY: check-nss
+check-nss:
+	@dpkg -l | grep $(NSS_PACKAGE) || \
+		echo "È richiesta l'installazione del pacchetto $(NSS_PACKAGE), esegui:\n$$ sudo apt install $(NSS_PACKAGE)"
+
+.PHONY: import-p12-into-firefox
+import-p12-into-firefox: check-nss check-crt-expiration data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
+	$(foreach profile,$(shell ls $(HOME)/.mozilla/firefox/*/cert9.db), \
+		certutil -D -d $(shell dirname "$(profile)")/ -n $(shell cat $(BUILD_DIR)/data/user_email); \
+		pk12util -i data/.step/user.p12 -d $(shell dirname "$(profile)")/ -W ""; \
+	)
+	
 .PHONY: encrypt-configs
 encrypt-configs: data/step-$(STEP_VERSION).tgz ## Cifra le configurazioni modificate
 	tar cvp \
