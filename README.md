@@ -41,7 +41,7 @@ Per avviare la VPN da riga di comando (comunque accessibile anche dalla GUI del 
 $ nmcli con up confinet-pfext01-step
 ```
 
-Per importare il certificato in Firefox (Linux):
+Per importare il certificato in Firefox (Linux) accertarsi di avere installato il pacchetto `libnss3-tools` e poi:
 
 ```console
 $ make import-p12-into-firefox
