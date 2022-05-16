@@ -113,7 +113,7 @@ check-nss:
 
 .PHONY: import-p12-into-firefox
 import-p12-into-firefox: check-nss check-crt-expiration data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
-	$(foreach profile,$(shell ls $(HOME)/.mozilla/firefox/*/cert9.db), \
+	$(foreach profile,$(shell ls $(HOME)/.mozilla/firefox/*/cert9.db $(HOME)/snap/firefox/common/.mozilla/firefox/*/cert9.db), \
 		certutil -D -d $(shell dirname "$(profile)")/ -n $(shell cat $(BUILD_DIR)/data/user_email); \
 		pk12util -i data/.step/user.p12 -d $(shell dirname "$(profile)")/ -W ""; \
 	)
