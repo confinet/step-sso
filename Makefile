@@ -24,7 +24,7 @@ define obtain_token
 endef
 
 .PHONY: all
-all: $(STEP_BIN) add-user-certificate-to-browsers add-ssh-certificate-to-agent import-pfext01-step-openvpn
+all: $(STEP_BIN) add-ssh-certificate-to-agent add-user-certificate-to-browsers add-vpn-config-to-system
 
 data/step-$(STEP_VERSION).tgz:
 	@echo -n "Downloading $(BUILD_DIR)/$@ ... "
@@ -111,30 +111,15 @@ check-expiration:
 		echo "User SSH certificate expired: removed"; \
 	fi;
 
-data/$(VPN_NAME).ovpn: data/.step/config/defaults.json check-expiration data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
-	@cp -a $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/pfext01-step.ovpn  $(BUILD_DIR)/$@.tmp
-	@echo "<ca>"                                      >> $(BUILD_DIR)/$@.tmp
-	@cat $(BUILD_DIR)/data/.step/certs/root_ca.crt    >> $(BUILD_DIR)/$@.tmp
-	@echo "</ca>"                                     >> $(BUILD_DIR)/$@.tmp
-	@echo "<cert>"                                    >> $(BUILD_DIR)/$@.tmp
-	@cat $(BUILD_DIR)/data/.step/user.crt             >> $(BUILD_DIR)/$@.tmp
-	@echo "</cert>"                                   >> $(BUILD_DIR)/$@.tmp
-	@echo "<key>"                                     >> $(BUILD_DIR)/$@.tmp
-	@cat $(BUILD_DIR)/data/.step/user.key             >> $(BUILD_DIR)/$@.tmp
-	@echo "</key>"                                    >> $(BUILD_DIR)/$@.tmp
-	@mv $(BUILD_DIR)/$@.tmp $(BUILD_DIR)/$@
+.PHONY: create-ssh-certificate
+create-ssh-certificate: check-expiration data/.step/ssh_user_key-cert.pub
 
-.PHONY: check-networkmanager
-check-networkmanager:
-	@dpkg -l | grep $(NETWORKMANAGER_PACKAGE) > /dev/null || \
-		echo "È richiesta l'installazione del pacchetto $(NETWORKMANAGER_PACKAGE), esegui:\n$$ sudo apt install $(NETWORKMANAGER_PACKAGE)"
+.PHONY: add-ssh-certificate-to-agent
+add-ssh-certificate-to-agent: check-expiration data/.step/ssh_user_key-cert.pub
+	@ssh-add $(BUILD_DIR)/data/.step/ssh_user_key
 
-.PHONY: import-pfext01-step-openvpn
-import-pfext01-step-openvpn: data/$(VPN_NAME).ovpn check-networkmanager
-	@nmcli connection delete $(VPN_NAME) > /dev/null 2> /dev/null || true
-	@nmcli connection import type openvpn file $(BUILD_DIR)/data/$(VPN_NAME).ovpn
-	@-echo "set ipv4.never-default yes\nsave\nquit" \
-		| nmcli connection edit $(VPN_NAME) > /dev/null
+.PHONY: create-user-certificate
+create-user-certificate: check-expiration data/.step/user.crt
 
 .PHONY: check-nss
 check-nss:
@@ -149,9 +134,34 @@ add-user-certificate-to-browsers: check-nss check-expiration data/.step/user.crt
 		echo "User certificate added to: $(profile)"; \
 	)
 
-.PHONY: import-ssh-certificate-to-agent
-add-ssh-certificate-to-agent: check-expiration data/.step/ssh_user_key-cert.pub
-	@ssh-add $(BUILD_DIR)/data/.step/ssh_user_key
+data/$(VPN_NAME).ovpn: data/.step/config/defaults.json check-expiration data/.step/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
+	@cp -a $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/pfext01-step.ovpn  $(BUILD_DIR)/$@.tmp
+	@echo "<ca>"                                      >> $(BUILD_DIR)/$@.tmp
+	@cat $(BUILD_DIR)/data/.step/certs/root_ca.crt    >> $(BUILD_DIR)/$@.tmp
+	@echo "</ca>"                                     >> $(BUILD_DIR)/$@.tmp
+	@echo "<cert>"                                    >> $(BUILD_DIR)/$@.tmp
+	@cat $(BUILD_DIR)/data/.step/user.crt             >> $(BUILD_DIR)/$@.tmp
+	@echo "</cert>"                                   >> $(BUILD_DIR)/$@.tmp
+	@echo "<key>"                                     >> $(BUILD_DIR)/$@.tmp
+	@cat $(BUILD_DIR)/data/.step/user.key             >> $(BUILD_DIR)/$@.tmp
+	@echo "</key>"                                    >> $(BUILD_DIR)/$@.tmp
+	@mv $(BUILD_DIR)/$@.tmp $(BUILD_DIR)/$@
+	@echo "✔ OpenVPN config: $(BUILD_DIR)/$@"
+
+.PHONY: check-networkmanager
+check-networkmanager:
+	@dpkg -l | grep $(NETWORKMANAGER_PACKAGE) > /dev/null || \
+		echo "Package $(NETWORKMANAGER_PACKAGE) is required to automatically add OpenVPN config to system, run this command to install it:\n$$ sudo apt install $(NETWORKMANAGER_PACKAGE)"
+
+.PHONY: create-vpn-config
+create-vpn-config: data/$(VPN_NAME).ovpn
+
+.PHONY: add-vpn-config-to-system
+add-vpn-config-to-system: data/$(VPN_NAME).ovpn check-networkmanager
+	@nmcli connection delete $(VPN_NAME) > /dev/null 2> /dev/null || true
+	@nmcli connection import type openvpn file $(BUILD_DIR)/data/$(VPN_NAME).ovpn
+	@-echo "set ipv4.never-default yes\nsave\nquit" \
+		| nmcli connection edit $(VPN_NAME) > /dev/null
 
 .PHONY: encrypt-configs
 encrypt-configs: data/step-$(STEP_VERSION).tgz
