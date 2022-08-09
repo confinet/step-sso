@@ -11,18 +11,6 @@ NSS_PACKAGE := libnss3-tools
 
 export STEPPATH=$(BUILD_DIR)/data/.step
 
-define obtain_token
-	@echo "A token is required to generate the next certificate."
-	@$(STEP_BIN) oauth \
-		--oidc \
-		--bare \
-		--client-id $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-id) \
-		--client-secret $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-secret) \
-		--email $(shell cat $(BUILD_DIR)/data/user_email) \
-		--prompt=select_account \
-		> $(BUILD_DIR)/$@
-endef
-
 .PHONY: all
 all: $(STEP_BIN) add-ssh-certificate-to-agent add-user-certificate-to-browsers add-vpn-config-to-system
 
@@ -51,15 +39,20 @@ data/.step/config/defaults.json: $(STEP_BIN) $(CONFIGS_PLAIN_DIR)/files.tar
 data/user_email:
 	@systemd-ask-password --echo "Insert your company e-mail:" > $(BUILD_DIR)/$@
 
-data/TOKEN_crt: data/.step/config/defaults.json $(CONFIGS_PLAIN_DIR)/files.tar data/user_email
-	$(obtain_token)
+data/TOKEN: data/.step/config/defaults.json $(CONFIGS_PLAIN_DIR)/files.tar data/user_email
+	@echo "A token is required to generate the next certificate."
+	@$(STEP_BIN) oauth \
+		--oidc \
+		--bare \
+		--client-id $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-id) \
+		--client-secret $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/client-secret) \
+		--email $(shell cat $(BUILD_DIR)/data/user_email) \
+		--prompt=select_account \
+		> $(BUILD_DIR)/$@
 
-data/TOKEN_ssh_crt: data/.step/config/defaults.json $(CONFIGS_PLAIN_DIR)/files.tar data/user_email
-	$(obtain_token)
-
-data/.step/user.crt: data/user_email data/TOKEN_crt
+data/.step/user.crt: data/user_email data/TOKEN
 	@$(STEP_BIN) ca certificate --force \
-		--token $(shell cat $(BUILD_DIR)/data/TOKEN_crt) \
+		--token $(shell cat $(BUILD_DIR)/data/TOKEN) \
 		--kty RSA \
 		--size 2048 \
 		$(shell cat $(BUILD_DIR)/data/user_email) \
@@ -79,7 +72,16 @@ data/.step/user.crt: data/user_email data/TOKEN_crt
 		-out $(BUILD_DIR)/$@.p12
 	@echo "✔ PKCS #12: $(BUILD_DIR)/$@.p12"
 
-data/.step/ssh_user_key-cert.pub: data/user_email data/TOKEN_ssh_crt
+data/TOKEN_ssh_tmp: data/user_email data/.step/user.crt
+	@$(STEP_BIN) ca token \
+		$(shell cat $(BUILD_DIR)/data/user_email) \
+		--ssh \
+		--provisioner "x5c-for-ssh" \
+		--x5c-cert $(BUILD_DIR)/data/.step/user.crt \
+		--x5c-key $(BUILD_DIR)/data/.step/user.key \
+		> $(BUILD_DIR)/$@
+
+data/.step/ssh_user_key-cert.pub: data/user_email data/.step/user.crt data/TOKEN_ssh_tmp
 	@rm -f $(BUILD_DIR)/data/.step/ssh_user_key*
 	@ssh-keygen \
 		-t ed25519 \
@@ -91,24 +93,16 @@ data/.step/ssh_user_key-cert.pub: data/user_email data/TOKEN_ssh_crt
 	@$(STEP_BIN) ssh certificate \
 		$(shell cat $(BUILD_DIR)/data/user_email) \
 		$(BUILD_DIR)/data/.step/ssh_user_key.pub \
-		--token $(shell cat $(BUILD_DIR)/data/TOKEN_ssh_crt) \
+		--token "$(shell cat $(BUILD_DIR)/data/TOKEN_ssh_tmp)" \
 		--sign
-	@$(STEP_BIN) ssh inspect $(BUILD_DIR)/$@ \
-		| grep Valid: \
-		| sed 's/.\+to //' \
-		| xargs date +%s -d \
-		> $(BUILD_DIR)/$@.expiresAt
+	@rm $(BUILD_DIR)/data/TOKEN_ssh_tmp
 
 .PHONY: check-expiration
 check-expiration:
 	@if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/data/.step/user.crt.expiresAt 2> /dev/null || echo 0) ]; then \
-		rm -f $(BUILD_DIR)/data/.step/user.* $(BUILD_DIR)/data/TOKEN_crt; \
-		echo "User certificate expired: removed"; \
-	fi;
-	@if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/data/.step/ssh_user_key-cert.pub.expiresAt 2> /dev/null  || echo 0) ]; then \
 		ssh-add -d $(BUILD_DIR)/data/.step/ssh_user_key > /dev/null || true; \
-		rm -f $(BUILD_DIR)/data/.step/ssh_user_key* $(BUILD_DIR)/data/TOKEN_ssh_crt; \
-		echo "User SSH certificate expired: removed"; \
+		rm -f $(BUILD_DIR)/data/.step/user.* $(BUILD_DIR)/data/TOKEN; \
+		echo "User certificates expired: removed"; \
 	fi;
 
 .PHONY: create-ssh-certificate

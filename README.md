@@ -35,10 +35,6 @@ git clone https://github.com/confinet/step-sso.git ~/confinet-step-sso
 
 `make`
 
-*WARNING*: Two separated login prompt required, one for SSH cert and
-one for X.509 cert, until https://github.com/smallstep/certificates/issues/985
-gets fixed.
-
 ## Auto-select cert on Firefox
 
 Open `about:config` and set:
