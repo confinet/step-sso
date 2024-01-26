@@ -10,7 +10,7 @@ Tested on Ubuntu >= 22.04, may work in any Debian/Ubuntu based distro
 ## Installation
 
 ```console
-git clone https://github.com/confinet/step-sso.git ~/confinet-step-sso
+git clone https://github.com/confinet/step-sso.git ~/repos/confinet-step-sso
 ```
 
 ## Usage
@@ -19,9 +19,9 @@ git clone https://github.com/confinet/step-sso.git ~/confinet-step-sso
 
 | Command | Generated files |
 | --- | --- |
-| `make create-ssh-certificate` | `./data/.step/ssh_user_key` <br> `./data/.step/ssh_user_key.pub` <br> `./data/.step/ssh_user_key-cert.pub` |
-| `make create-user-certificate` | `./data/.step/user.crt` <br> `./data/.step/user.key` <br> `./data/.step/user.crt.p12` |
-| `make create-vpn-config` | `./data/confinet-pfext01-step.ovpn` |
+| `make create-ssh-certificate` | `./data/user/ssh_user_certs/ssh_user_key` <br> `./data/user/ssh_user_certs/ssh_user_key.pub` <br> `./data/user/ssh_user_certs/ssh_user_key-cert.pub` |
+| `make create-user-certificate` | `./data/user/tls_user_certs/user.crt` <br> `./data/user/tls_user_certs/user.key` <br> `./data/user/tls_user_certs/user.crt.p12` |
+| `make create-vpn-config` | `./data/user/confinet-pfext01-step.ovpn` |
 
 ### Import certs in system
 
