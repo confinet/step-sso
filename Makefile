@@ -1,7 +1,7 @@
 .DELETE_ON_ERROR:
 
 BUILD_DIR := .
-STEP_VERSION := 0.25.2
+STEP_VERSION := 0.28.2
 STEP_BIN := $(BUILD_DIR)/data/step_$(STEP_VERSION)/bin/step
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
