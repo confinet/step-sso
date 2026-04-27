@@ -145,7 +145,7 @@ check-nss:
 
 .PHONY: add-user-certificate-to-browsers
 add-user-certificate-to-browsers: check-nss check-expiration $(TLS_CERTS_DIR)/user.crt
-	@$(foreach profile,$(shell ls $(HOME)/.mozilla/firefox/*/cert9.db $(HOME)/snap/firefox/common/.mozilla/firefox/*/cert9.db $(HOME)/.pki/nssdb/cert9.db 2> /dev/null), \
+	@$(foreach profile,$(shell ls $(HOME)/.mozilla/firefox/*/cert9.db $(HOME)/snap/firefox/common/.mozilla/firefox/*/cert9.db $(HOME)/.pki/nssdb/cert9.db $(HOME)/.local/share/pki/nssdb/cert9.db 2> /dev/null), \
 		certutil -D -d $(shell dirname "$(profile)")/ -n $(shell cat $(BUILD_DIR)/$(DOT_STEP_DIR)/user_email) > /dev/null; \
 		pk12util -i $(BUILD_DIR)/$(TLS_CERTS_DIR)/user.crt.p12 -d $(shell dirname "$(profile)")/ -W ""  > /dev/null; \
 		echo "$(CHECKMARK) User certificate added to: $(profile)"; \
