@@ -129,7 +129,7 @@ $(SSH_CERTS_DIR)/ssh_user_key-cert.pub: $(DOT_STEP_DIR)/user_email $(TLS_CERTS_D
 .PHONY: check-expiration
 check-expiration:
 	@if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/$(TLS_CERTS_DIR)/user.crt.expiresAt 2> /dev/null || echo 0) ]; then \
-		ssh-add -d $(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key &> /dev/null || true; \
+		ssh-add -d $(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key > /dev/null 2>&1 || true; \
 		rm -f $(BUILD_DIR)/$(TLS_CERTS_DIR)/* $(BUILD_DIR)/$(DOT_STEP_DIR)/TLS_TOKEN; \
 		echo "$(CHECKMARK) User certificates expired: removed"; \
 	else \
