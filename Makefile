@@ -1,8 +1,8 @@
 .DELETE_ON_ERROR:
 
 BUILD_DIR := .
-STEP_VERSION := 0.30.2
-STEP_CHECKSUMS_SHA256 := dbf5b23a8f18af2ae57edee9ea19289b6fb02c4e99f73347da3d8ee4ae8fb2cc
+STEP_VERSION := 0.31.0
+STEP_CHECKSUMS_SHA256 := 10220d8de700735ac6afcd0f3d914be74a9711c1e43de3c094b4a6c91059ef38
 STEP_RELEASE_URL := https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)
 STEP_TARBALL := step_linux_$(STEP_VERSION)_amd64.tar.gz
 STEP_BIN := $(BUILD_DIR)/data/step_$(STEP_VERSION)/bin/step
