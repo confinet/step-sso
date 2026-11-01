@@ -5,7 +5,8 @@ for daily work, and configure system to use them.
 
 ## Requirements
 
-Tested on Ubuntu >= 22.04, may work in any Debian/Ubuntu based distro
+Tested on Ubuntu >= 22.04 (amd64), may work in any Debian/Ubuntu based distro.
+The `step` binary matching the system architecture is downloaded (amd64, arm64, armhf, i386).
 
 ## Installation
 

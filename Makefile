@@ -1,10 +1,11 @@
 .DELETE_ON_ERROR:
 
+STEP_ARCH := $(subst armhf,armv7,$(subst i386,386,$(shell dpkg --print-architecture)))
 BUILD_DIR := .
 STEP_VERSION := 0.30.2
 STEP_CHECKSUMS_SHA256 := dbf5b23a8f18af2ae57edee9ea19289b6fb02c4e99f73347da3d8ee4ae8fb2cc
 STEP_RELEASE_URL := https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)
-STEP_TARBALL := step_linux_$(STEP_VERSION)_amd64.tar.gz
+STEP_TARBALL := step_linux_$(STEP_VERSION)_$(STEP_ARCH).tar.gz
 STEP_BIN := $(BUILD_DIR)/data/step_$(STEP_VERSION)/bin/step
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
