@@ -150,7 +150,7 @@ create-user-certificate: check-expiration $(TLS_CERTS_DIR)/user.crt
 
 .PHONY: check-nss
 check-nss:
-	@if [ -z "$(shell dpkg -l | grep $(NSS_PACKAGE) 2> /dev/null)" ]; then \
+	@if ! dpkg-query -W -f='$${Status}' $(NSS_PACKAGE) 2> /dev/null | grep -q "install ok installed"; then \
 		echo "$(QUESTIONMARK) Package $(NSS_PACKAGE) is required to add certificates to browsers but is missing from your system"; \
 		echo -n "$(QUESTIONMARK) Do you want to run \`sudo apt install $(NSS_PACKAGE)\` to install it? [y/N] " && read ans && [ $${ans:-N} != y ] && echo "Aborted" && exit 1; \
 		sudo apt install $(NSS_PACKAGE); \
@@ -181,7 +181,7 @@ $(DOT_STEP_DIR)/$(VPN_NAME).ovpn: $(DOT_STEP_DIR)/config/defaults.json check-exp
 
 .PHONY: check-networkmanager
 check-networkmanager:
-	@if [ -z "$(shell dpkg -l | grep $(NETWORKMANAGER_PACKAGE) 2> /dev/null)" ]; then \
+	@if ! dpkg-query -W -f='$${Status}' $(NETWORKMANAGER_PACKAGE) 2> /dev/null | grep -q "install ok installed"; then \
 		echo "$(QUESTIONMARK) Package $(NETWORKMANAGER_PACKAGE) is required to add OpenVPN config to system but is missing from your system"; \
 		echo -n "$(QUESTIONMARK) Do you want to run \`sudo apt install $(NETWORKMANAGER_PACKAGE)\` to install it? [y/N] " && read ans && [ $${ans:-N} != y ] && echo "Aborted" && exit 1; \
 		sudo apt install $(NETWORKMANAGER_PACKAGE); \
