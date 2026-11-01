@@ -21,7 +21,11 @@ SSH_CERTS_DIR=$(DOT_STEP_DIR)/ssh_user_certs
 export STEPPATH=$(BUILD_DIR)/$(DOT_STEP_DIR)
 
 .PHONY: all
-all: $(STEP_BIN) git-pull add-ssh-certificate-to-agent add-user-certificate-to-browsers add-vpn-config-to-system
+all: git-pull
+	@$(MAKE) --no-print-directory everything
+
+.PHONY: everything
+everything: $(STEP_BIN) add-ssh-certificate-to-agent add-user-certificate-to-browsers add-vpn-config-to-system
 
 .PHONY: private-dirs
 private-dirs:
@@ -30,7 +34,7 @@ private-dirs:
 
 .PHONY: git-pull
 git-pull:
-	git pull
+	git pull --ff-only
 
 data/step-$(STEP_VERSION).tgz:
 	@echo -n "$(CHECKMARK) Downloading $(BUILD_DIR)/$@ ... "
