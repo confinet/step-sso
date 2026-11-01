@@ -165,7 +165,7 @@ add-user-certificate-to-browsers: check-nss check-expiration $(TLS_CERTS_DIR)/us
 		echo "$(CHECKMARK) User certificate added to: $(profile)"; \
 	)
 
-$(DOT_STEP_DIR)/$(VPN_NAME).ovpn: $(DOT_STEP_DIR)/config/defaults.json check-expiration $(TLS_CERTS_DIR)/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
+$(DOT_STEP_DIR)/$(VPN_NAME).ovpn: $(DOT_STEP_DIR)/config/defaults.json $(TLS_CERTS_DIR)/user.crt $(CONFIGS_PLAIN_DIR)/files.tar
 	@cp -a $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/pfext01-step.ovpn  $(BUILD_DIR)/$@.tmp
 	@echo "<ca>"                                      	>> $(BUILD_DIR)/$@.tmp
 	@cat $(BUILD_DIR)/$(DOT_STEP_DIR)/certs/root_ca.crt	>> $(BUILD_DIR)/$@.tmp
@@ -189,15 +189,22 @@ check-networkmanager:
 	@echo "$(CHECKMARK) Package \`$(NETWORKMANAGER_PACKAGE)\` present in the system"; \
 
 .PHONY: create-vpn-config
-create-vpn-config: $(DOT_STEP_DIR)/$(VPN_NAME).ovpn
+create-vpn-config: check-expiration $(DOT_STEP_DIR)/$(VPN_NAME).ovpn
 
-.PHONY: add-vpn-config-to-system
-add-vpn-config-to-system: $(DOT_STEP_DIR)/$(VPN_NAME).ovpn check-networkmanager
+$(DOT_STEP_DIR)/$(VPN_NAME).imported: $(DOT_STEP_DIR)/$(VPN_NAME).ovpn
 	@nmcli connection delete $(VPN_NAME) > /dev/null 2> /dev/null || true
 	@echo -n "$(CHECKMARK) "
-	@nmcli connection import type openvpn file $(BUILD_DIR)/$(DOT_STEP_DIR)/$(VPN_NAME).ovpn
-	@-echo "set ipv4.never-default yes\nsave\nquit" \
-		| nmcli connection edit $(VPN_NAME) > /dev/null
+	@nmcli connection import type openvpn file $(BUILD_DIR)/$<
+	@nmcli connection modify $(VPN_NAME) ipv4.never-default yes
+	@touch $(BUILD_DIR)/$@
+
+.PHONY: check-vpn-connection
+check-vpn-connection:
+	@nmcli connection show $(VPN_NAME) > /dev/null 2>&1 \
+		|| rm -f $(BUILD_DIR)/$(DOT_STEP_DIR)/$(VPN_NAME).imported
+
+.PHONY: add-vpn-config-to-system
+add-vpn-config-to-system: check-expiration check-networkmanager check-vpn-connection $(DOT_STEP_DIR)/$(VPN_NAME).imported
 	@echo "$(CHECKMARK) Type \`nmcli connection up $(VPN_NAME)\` to start the VPN from cli"
 
 .PHONY: encrypt-configs
