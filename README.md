@@ -35,6 +35,9 @@ git clone https://github.com/confinet/step-sso.git ~/repos/confinet-step-sso
 
 `make`
 
+It first runs `git pull --ff-only`, then runs `make everything` so that the freshly pulled `Makefile` is the one used.
+Run `make everything` directly to skip the pull.
+
 ## Auto-select cert on Firefox
 
 Open `about:config` and set:
