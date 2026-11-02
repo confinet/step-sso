@@ -42,7 +42,7 @@ git-pull:
 
 data/step-$(STEP_VERSION).tgz:
 	@echo -n "$(CHECKMARK) Downloading $(BUILD_DIR)/$@ ... "
-	@rm -fr $(STEP_BIN)*
+	@rm -fr $(BUILD_DIR)/data/step_* $(BUILD_DIR)/data/step-*.tgz*
 	@wget -q -O $(BUILD_DIR)/$@.checksums $(STEP_RELEASE_URL)/checksums.txt
 	@echo "$(STEP_CHECKSUMS_SHA256)  $(BUILD_DIR)/$@.checksums" | sha256sum --check --quiet
 	@wget -q -O $(BUILD_DIR)/$@ $(STEP_RELEASE_URL)/$(STEP_TARBALL)
