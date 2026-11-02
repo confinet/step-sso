@@ -20,6 +20,8 @@ TLS_CERTS_DIR=$(DOT_STEP_DIR)/tls_user_certs
 SSH_CERTS_DIR=$(DOT_STEP_DIR)/ssh_user_certs
 export STEPPATH=$(BUILD_DIR)/$(DOT_STEP_DIR)
 
+.INTERMEDIATE: $(DOT_STEP_DIR)/TLS_TOKEN $(DOT_STEP_DIR)/SSH_TOKEN
+
 .PHONY: all
 all: $(STEP_BIN) git-pull add-ssh-certificate-to-agent add-user-certificate-to-browsers add-vpn-config-to-system
 
@@ -124,7 +126,6 @@ $(SSH_CERTS_DIR)/ssh_user_key-cert.pub: $(DOT_STEP_DIR)/user_email $(TLS_CERTS_D
 		$(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key.pub \
 		--token "$(shell cat $(BUILD_DIR)/$(DOT_STEP_DIR)/SSH_TOKEN)" \
 		--sign
-	@rm $(BUILD_DIR)/$(DOT_STEP_DIR)/SSH_TOKEN
 
 .PHONY: check-expiration
 check-expiration:
