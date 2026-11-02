@@ -2,6 +2,9 @@
 
 BUILD_DIR := .
 STEP_VERSION := 0.30.2
+STEP_CHECKSUMS_SHA256 := dbf5b23a8f18af2ae57edee9ea19289b6fb02c4e99f73347da3d8ee4ae8fb2cc
+STEP_RELEASE_URL := https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)
+STEP_TARBALL := step_linux_$(STEP_VERSION)_amd64.tar.gz
 STEP_BIN := $(BUILD_DIR)/data/step_$(STEP_VERSION)/bin/step
 CONFIGS_CIPHER_DIR := configs-cipher
 CONFIGS_PLAIN_DIR := configs-plain
@@ -20,6 +23,11 @@ export STEPPATH=$(BUILD_DIR)/$(DOT_STEP_DIR)
 .PHONY: all
 all: $(STEP_BIN) git-pull add-ssh-certificate-to-agent add-user-certificate-to-browsers add-vpn-config-to-system
 
+.PHONY: private-dirs
+private-dirs:
+	@mkdir -p $(BUILD_DIR)/$(DOT_STEP_DIR) $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)
+	@chmod 700 $(BUILD_DIR)/$(DOT_STEP_DIR) $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)
+
 .PHONY: git-pull
 git-pull:
 	git pull
@@ -27,14 +35,18 @@ git-pull:
 data/step-$(STEP_VERSION).tgz:
 	@echo -n "$(CHECKMARK) Downloading $(BUILD_DIR)/$@ ... "
 	@rm -fr $(STEP_BIN)*
-	@wget -q -O $(BUILD_DIR)/$@ https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)/step_linux_$(STEP_VERSION)_amd64.tar.gz
+	@wget -q -O $(BUILD_DIR)/$@.checksums $(STEP_RELEASE_URL)/checksums.txt
+	@echo "$(STEP_CHECKSUMS_SHA256)  $(BUILD_DIR)/$@.checksums" | sha256sum --check --quiet
+	@wget -q -O $(BUILD_DIR)/$@ $(STEP_RELEASE_URL)/$(STEP_TARBALL)
+	@echo "$$(grep ' $(STEP_TARBALL)$$' $(BUILD_DIR)/$@.checksums | cut -d ' ' -f 1)  $(BUILD_DIR)/$@" | sha256sum --check --quiet
+	@rm $(BUILD_DIR)/$@.checksums
 	@tar -C $(BUILD_DIR)/data -xf $(BUILD_DIR)/$@
 	@echo "done."
 
 $(STEP_BIN): data/step-$(STEP_VERSION).tgz
 	@echo "$(CHECKMARK) smallstep/cli version used: $(STEP_VERSION)"
 
-$(CONFIGS_PLAIN_DIR)/files.tar: $(CONFIGS_CIPHER_DIR)/files.tar.jwe
+$(CONFIGS_PLAIN_DIR)/files.tar: $(CONFIGS_CIPHER_DIR)/files.tar.jwe | private-dirs
 	@echo "$(QUESTIONMARK) $@ missing, trying to decrypt it"
 	@$(STEP_BIN) crypto jwe decrypt \
 		< $(BUILD_DIR)/$(CONFIGS_CIPHER_DIR)/files.tar.jwe \
@@ -44,13 +56,13 @@ $(CONFIGS_PLAIN_DIR)/files.tar: $(CONFIGS_CIPHER_DIR)/files.tar.jwe
 		--directory $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/ \
 		--file $(BUILD_DIR)/$@
 
-$(DOT_STEP_DIR)/config/defaults.json: $(STEP_BIN) $(CONFIGS_PLAIN_DIR)/files.tar
+$(DOT_STEP_DIR)/config/defaults.json: $(STEP_BIN) $(CONFIGS_PLAIN_DIR)/files.tar | private-dirs
 	@echo -n "$(CHECKMARK) "
 	@$(STEP_BIN) ca bootstrap --force \
 		--ca-url $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/ca-url) \
 		--fingerprint  $(shell cat $(BUILD_DIR)/$(CONFIGS_PLAIN_DIR)/ca-fingerprint)
 
-$(DOT_STEP_DIR)/user_email:
+$(DOT_STEP_DIR)/user_email: | private-dirs
 	@mkdir -p $(DOT_STEP_DIR)
 	@echo -n "$(QUESTIONMARK) "
 	@systemd-ask-password --echo "Identity missing, please insert your company e-mail:" > $(BUILD_DIR)/$@
@@ -129,7 +141,9 @@ create-ssh-certificate: check-expiration $(SSH_CERTS_DIR)/ssh_user_key-cert.pub
 
 .PHONY: add-ssh-certificate-to-agent
 add-ssh-certificate-to-agent: check-expiration $(SSH_CERTS_DIR)/ssh_user_key-cert.pub
-	@ssh-add $(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key
+	@ssh-add \
+		-t $$(( $$(date +%s -d "$$(ssh-keygen -L -f $(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key-cert.pub | sed -n 's/^\s*Valid: from .* to //p')") - $$(date +%s) )) \
+		$(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key
 
 .PHONY: create-user-certificate
 create-user-certificate: check-expiration $(TLS_CERTS_DIR)/user.crt
