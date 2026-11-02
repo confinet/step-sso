@@ -2,9 +2,10 @@
 
 STEP_ARCH := $(subst armhf,armv7,$(subst i386,386,$(shell dpkg --print-architecture)))
 BUILD_DIR := .
-STEP_VERSION := 0.31.0
+STEP_TAG := v0.31.0
 STEP_CHECKSUMS_SHA256 := 10220d8de700735ac6afcd0f3d914be74a9711c1e43de3c094b4a6c91059ef38
-STEP_RELEASE_URL := https://github.com/smallstep/cli/releases/download/v$(STEP_VERSION)
+STEP_VERSION := $(STEP_TAG:v%=%)
+STEP_RELEASE_URL := https://github.com/smallstep/cli/releases/download/$(STEP_TAG)
 STEP_TARBALL := step_linux_$(STEP_VERSION)_$(STEP_ARCH).tar.gz
 STEP_BIN := $(BUILD_DIR)/data/step_$(STEP_VERSION)/bin/step
 CONFIGS_CIPHER_DIR := configs-cipher
