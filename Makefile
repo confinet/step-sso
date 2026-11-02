@@ -162,6 +162,10 @@ check-nss:
 add-user-certificate-to-browsers: check-nss check-expiration $(TLS_CERTS_DIR)/user.crt
 	@$(foreach profile,$(shell ls $(HOME)/.mozilla/firefox/*/cert9.db $(HOME)/snap/firefox/common/.mozilla/firefox/*/cert9.db $(HOME)/.pki/nssdb/cert9.db $(HOME)/.local/share/pki/nssdb/cert9.db 2> /dev/null), \
 		certutil -D -d $(shell dirname "$(profile)")/ -n $(shell cat $(BUILD_DIR)/$(DOT_STEP_DIR)/user_email) > /dev/null; \
+		for key in $$(certutil -K -d $(shell dirname "$(profile)")/ < /dev/null 2> /dev/null \
+			| sed -n 's/^<[ 0-9]*> [a-z]* *\([0-9a-f]*\) *$(shell cat $(BUILD_DIR)/$(DOT_STEP_DIR)/user_email)$$/\1/p'); do \
+			certutil -F -d $(shell dirname "$(profile)")/ -k $$key; \
+		done; \
 		pk12util -i $(BUILD_DIR)/$(TLS_CERTS_DIR)/user.crt.p12 -d $(shell dirname "$(profile)")/ -W ""  > /dev/null; \
 		echo "$(CHECKMARK) User certificate added to: $(profile)"; \
 	)
