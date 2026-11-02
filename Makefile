@@ -11,6 +11,7 @@ CONFIGS_PLAIN_DIR := configs-plain
 VPN_NAME := confinet-pfext01-step
 NETWORKMANAGER_PACKAGE := network-manager-openvpn-gnome
 NSS_PACKAGE := libnss3-tools
+RENEW_BEFORE := 2h
 
 CHECKMARK=\033[0;32m✔\033[0m
 QUESTIONMARK=\033[1;41m?\033[0m
@@ -92,11 +93,6 @@ $(TLS_CERTS_DIR)/user.crt: $(DOT_STEP_DIR)/user_email $(DOT_STEP_DIR)/TLS_TOKEN
 		$(shell cat $(BUILD_DIR)/$(DOT_STEP_DIR)/user_email) \
 		$(BUILD_DIR)/$@ \
 		$(BUILD_DIR)/$(patsubst %.crt,%.key,$@)
-	@$(STEP_BIN) certificate inspect --short $(BUILD_DIR)/$@ \
-		| tail -n1 \
-		| sed 's/\s\+to:\s\+//' \
-		| xargs date +%s -d \
-		> $(BUILD_DIR)/$@.expiresAt
 	@openssl pkcs12 \
 		-passout pass: \
 		-inkey $(BUILD_DIR)/$(TLS_CERTS_DIR)/user.key \
@@ -132,11 +128,12 @@ $(SSH_CERTS_DIR)/ssh_user_key-cert.pub: $(DOT_STEP_DIR)/user_email $(TLS_CERTS_D
 		--sign
 
 .PHONY: check-expiration
-check-expiration:
-	@if [ $(shell date +%s) -ge $(shell cat $(BUILD_DIR)/$(TLS_CERTS_DIR)/user.crt.expiresAt 2> /dev/null || echo 0) ]; then \
+check-expiration: $(STEP_BIN)
+	@$(STEP_BIN) certificate needs-renewal --expires-in $(RENEW_BEFORE) $(BUILD_DIR)/$(TLS_CERTS_DIR)/user.crt > /dev/null 2>&1; \
+	if [ $$? -ne 1 ]; then \
 		ssh-add -d $(BUILD_DIR)/$(SSH_CERTS_DIR)/ssh_user_key > /dev/null 2>&1 || true; \
 		rm -f $(BUILD_DIR)/$(TLS_CERTS_DIR)/* $(BUILD_DIR)/$(DOT_STEP_DIR)/TLS_TOKEN; \
-		echo "$(CHECKMARK) User certificates expired: removed"; \
+		echo "$(CHECKMARK) User certificates expired or expiring within $(RENEW_BEFORE): removed"; \
 	else \
 		echo "$(CHECKMARK) User certificates still valid"; \
 	fi;
