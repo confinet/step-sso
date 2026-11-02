@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "smallstep/cli version and checksums.txt digest in the Makefile",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "STEP_TAG := (?<currentValue>v\\S+)\\nSTEP_CHECKSUMS_SHA256 := (?<currentDigest>[0-9a-f]{64})"
+      ],
+      "depNameTemplate": "smallstep/cli",
+      "datasourceTemplate": "github-release-attachments"
+    }
+  ]
+}
